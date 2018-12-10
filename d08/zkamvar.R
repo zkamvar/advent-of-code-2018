@@ -1,49 +1,43 @@
-# --- Day 8: Memory Maneuver ---
+#!/urs/bin/env Rscript
 
-# The sleigh is much easier to pull than you'd expect for something its weight.
-# Unfortunately, neither you nor the Elves know which way the North Pole is
-# from here.
+input <- "2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2"
+bc    <- as.integer(strsplit(input, " ")[[1]])
+bcf   <- scan("zkamvar-input.txt", what = integer())
+bc
 
-# You check your wrist device for anything that might help. It seems to have
-# some kind of navigation system! Activating the navigation system produces
-# more bad news: "Failed to start navigation system. Could not read software
-# license file."
+next_node <- function(index, dat) {
+  has_child <- dat[index] > 0L
+  if (has_child) {
+    index + 2L
+  } else {
+    index + dat[index + 1L] + 2L
+  }
+}
 
-# The navigation system's license file consists of a list of numbers (your
-# puzzle input). The numbers define a data structure which, when processed,
-# produces some kind of tree that can be used to calculate the license number.
+find_nodes <- function(dat) {
+  i <- 1L -> count
+  res <- vector(mode = "list", length = length(dat))
+  res[[i]]$nchildren <- dat[i]
+  res[[i]]$children  <- NULL
+  res[[i]]$parent    <- NULL
+  res[[i]]$meta      <- NULL
+  while(i < length(dat)) {
+    count <- count + 1L
+    i <- next_node(i, dat)
+    res[[i]]$nchildren <- dat[i]
+    res[[i]]$children  <- if (dat[i] == 0) NULL else dat[i]
+    res[[i]]$parent    <- NULL
+  }
+  res[!is.na(res)]
+}
 
-# The tree is made up of nodes; a single, outermost node forms the tree's root,
-# and it contains all other nodes in the tree (or contains nodes that contain
-# nodes, and so on).
 
-# Specifically, a node consists of:
 
-#     A header, which is always exactly two numbers:
-#         The quantity of child nodes.
-#         The quantity of metadata entries.
-#     Zero or more child nodes (as specified in the header).
-#     One or more metadata entries (as specified in the header).
-
-# Each child node is itself a node that has its own header, child nodes, and
-# metadata. For example:
-
-# 2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2
-# A----------------------------------
-#     B----------- C-----------
-#                      D-----
-
-# In this example, each node of the tree is also marked with an underline
-# starting with a letter for easier identification. In it, there are four
-# nodes:
-
-#     A, which has 2 child nodes (B, C) and 3 metadata entries (1, 1, 2).
-#     B, which has 0 child nodes and 3 metadata entries (10, 11, 12).
-#     C, which has 1 child node (D) and 1 metadata entry (2).
-#     D, which has 0 child nodes and 1 metadata entry (99).
-
-# The first check done on the license file is to simply add up all of the
-# metadata entries. In this example, that sum is 1+1+2+10+11+12+2+99=138.
-
-# What is the sum of all metadata entries?
-
+the_nodes <- find_nodes(bc)
+bc[the_nodes]
+fnodes <- find_nodes(bcf)
+length(fnodes)
+bcf[fnodes][1:100]
+tail(bcf[fnodes])
+bcf[last_node(bcf)]
+tail(fnodes)
