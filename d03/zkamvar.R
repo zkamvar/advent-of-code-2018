@@ -1,10 +1,31 @@
 #!/usr/bin/env Rscript
+msg <- "
+        usage:
+          zkamvar.R <input.txt>
+
+        This script will take in an optional text file specifying claims of a
+        bolt of fabric of unknown dimension and find the only claim that does
+        not overlap with any other. If no input is given, a test input will be
+        used. 
+
+        Examples:
+          Rscript zkamvar.R 
+          Rscript zkamvar.R zkamvar-input.txt
+"
+
+the_args <- commandArgs(trailingOnly = TRUE)
+
 the_test <- c(
               "#1 @ 1,3: 4x4",
               "#2 @ 3,1: 4x4",
               "#3 @ 5,5: 2x2"
 )
 
+if (length(the_args) == 0) {
+  input <- the_test
+} else {
+  input <- readLines(the_args[1])
+}
 df_from_claims <- function(claims) {
   the_variables <- c("ID", "left", "top", "width", "height")
   df <- matrix(NA_integer_, 
@@ -60,8 +81,6 @@ claimdf <- df_from_claims(the_test)
 clashes <- create_matrix(claimdf)
 nclash  <- count_clashes(clashes)
 stopifnot(nclash == 4)
-vapply(seq(nrow(claimdf)), is_unclashed, logical(1), claimdf, clashes)
-input   <- readLines("zkamvar-input.txt")
 
 claims    <- df_from_claims(input)
 clashes   <- create_matrix(claims)
