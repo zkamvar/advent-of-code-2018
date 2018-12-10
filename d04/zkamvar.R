@@ -115,9 +115,29 @@ for (i in seq(nrow(sw))) {
 sleepy_guards <- rowSums(mat)
 sleepy_guard  <- rownames(mat)[which.max(sleepy_guards)]
 sleepy_time   <- names(which.max(mat[sleepy_guard, ]))
-as.integer(sleepy_guard) * as.integer(sleepy_time)
+res1 <- as.integer(sleepy_guard) * as.integer(sleepy_time)
 
 the_max <- mat[which.max(mat)]
 maxes <- apply(mat, 1, function(i){ m <- i == the_max; if (any(m)) which(m) else 0})
 res <- maxes[maxes > 0]
-as.integer(names(res)) * (as.integer(res) - 1L)
+res2 <- as.integer(names(res)) * (as.integer(res) - 1L)
+
+msg <- sprintf("
+        Guard %s was asleep for %d minutes, of which, minute %s was the
+        sleepiest time for them. Multiplying their ID by the minute gives us: %d
+
+        The most consistent guard was %s found asleep %d times at minute %d.
+        Multiplying their ID by the minute gives us: %d 
+        \n", 
+  sleepy_guard,
+  sleepy_guards[sleepy_guard],
+  sleepy_time,
+  res1,
+  names(res),
+  max(mat),
+  res - 1L,
+  res2
+)
+
+cat(msg)
+
