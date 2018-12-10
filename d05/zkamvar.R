@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
---- Day 5: Alchemical Reduction ---
+# --- Day 5: Alchemical Reduction ---
 
 # You've managed to sneak in to the prototype suit manufacturing lab. The Elves
 # are making decent progress, but are still struggling with the suit's size
