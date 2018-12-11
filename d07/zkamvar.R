@@ -68,18 +68,58 @@ step B must be finished before step E can begin.
 step D must be finished before step E can begin.
 step F must be finished before step E can begin."
 
-steps <- scan(text = txt, what = character(), sep = "\n")
-df <- data.frame(from = substr(steps, 6, 6), to = substr(steps, 37, 37), stringsAsFactors = FALSE)
 
-unique_steps <- sort(unique(c(df$from, df$to)))
-last_step <- unique(df$to[!df$to %in% df$from])
-first_step <- unique(df$from[!df$from %in% df$to])
-nsteps <- length(unique_steps)
-positions <- matrix(TRUE, nrow = nsteps, ncol = nsteps,
-                    dimnames = list(step = unique_steps, position = NULL))
-positions[, 1] <- FALSE
-positions[first_step, 1] <- TRUE
-positions[, nsteps] <- FALSE
-positions[last_step, nsteps] <- TRUE
-positions
+read_data <- function(dat) {
+  if (grepl("[[:blank:]]", dat)) {
+    steps <- scan(text = txt, what = character(), sep = "\n")
+  } else {
+    steps <- readLines(dat)
+  }
+  df <- data.frame(from = substr(steps, 6, 6), 
+                   to = substr(steps, 37, 37), 
+                   stringsAsFactors = FALSE)
+  df
+}
 
+build_steplist <- function(df) {
+  unique_steps <- sort(unique(c(df$from, df$to)))
+  steplist <- vector(mode = "list", length = length(unique_steps))
+  names(steplist) <- unique_steps
+  for (i in unique_steps) {
+    steplist[[i]]$parents  <- unique(df$from[df$to == i])
+    steplist[[i]]$children <- unique(df$to[df$from == i])
+  }
+  steplist
+}
+
+has_no_parents <- function(steplist) {
+  vapply(steplist, function(i) length(i$parents) == 0, logical(1))
+}
+has_no_children <- function(steplist) {
+  vapply(steplist, function(i) length(i$children) == 0, logical(1))
+}
+complete_child_tasks <- function(steplist, parent) {
+  children <- sort(steplist[[parent]]$children)
+  if (length(children) == 0) {
+    return(parent)
+  }
+  res <- parent
+  for (i in children) {
+    res <- c(res, complete_child_tasks(steplist, i))
+  }
+  res
+}
+find_order <- function(steplist) {
+  first <- names(steplist)[has_no_parents(steplist)]
+  res   <- first
+  for (i in first) {
+    res <- c(res, complete_child_tasks(steplist, i))
+  }
+  res[!duplicated(res, fromLast = TRUE)]
+}
+df <- read_data(txt)
+steplist <- build_steplist(df)
+find_order(steplist)
+zdf <- read_data("zkamvar-input.txt")
+zstep <- build_steplist(zdf)
+find_order(zstep)
