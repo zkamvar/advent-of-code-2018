@@ -83,35 +83,61 @@ get_position <- function(x, score) {
 }
 next_position <- function(x, current) {
   last_position <- get_position(x, current - 1L)
+  last_position <- if (is.na(last_position)) 0L else last_position
   if (current == last_position) {
     return(2L)
+  } else if (current %% 23 == 0) {
+    return(last_position - 7L)
+  } else if (last_position == 0L) {
+    return(get_position(x, current - 2L) - 4L)
   } else {
     return(last_position + 2L)
   }
 }
 fill_position <- function(x, current) {
-  pos        <- next_position(x, current)
-  to_replace <- x[, 2] >= pos
-  x[get_row(x, current), 2] <- pos
-  x[to_replace, 2] <- x[to_replace, 2] + 1L
+  pos     <- next_position(x, current)
+  the_row <- get_row(x, current)
+  nona      <- !is.na(x[, 2])
+  if (current %% 23 > 0) {
+    to_replace <- x[, 2] >= pos & nona
+    x[the_row, 2]    <- pos
+    x[to_replace, 2] <- x[to_replace, 2] + 1L
+  } else {
+    to_replace <- x[, 2] > pos & nona
+    nullify <- x[, 2] == pos & nona
+    x[the_row, "score"] <- current + x[pos, 1]
+    x[to_replace, 2]    <- x[to_replace, 2] - 1L 
+    x[nullify, 2]       <- NA
+    x[the_row, 2]       <- NA
+  }
   x
 }
 
-mat <- matrix(0L, nrow = 1619, ncol = 2)
-mat[, 1] <- seq(f = 0, t = 1618)
-mat[1:4, 2] <- c(1, 3, 2, 4) 
-head(mat)
-
 get_order <- function(x) {
-  order(mat[mat[, 2] > 0, 2])
+  order(x[x[, 2] > 0, 2], na.last = NA)
 }
 
-for_mat <- function(mat) {
-  paste(format(mat[get_order(mat), 1]), collapse = " ")
-}
-for (i in 4:22) {
-  mat <- fill_position(mat, i)
-  message(for_mat(mat))
+for_mat <- function(x) {
+  paste(format(x[get_order(x), 1]), collapse = " ")
 }
 
-head(mat, 23)
+play_game <- function(last_marble = 25) {
+  mat <- matrix(0L, nrow = last_marble + 1L, ncol = 3,
+                dimnames = list(NULL, c("marble", "position", "score"))
+               )
+  mat[, 1] <- seq(from = 0, to = last_marble)
+  mat[1:4, 2] <- c(1, 3, 2, 4) 
+  for (i in seq(from = 4, to = last_marble)) {
+    mat <- fill_position(mat, i)
+  }
+  mat
+}
+
+find_winners <- function(game, n) {
+  winners <- which(game[, "score"] > 0)
+  wlist   <- split(game[winners, "score"], winners %% n)
+  sort(vapply(wlist, sum, numeric(1)))
+}
+mat <- play_game(1618)
+
+find_winners(mat, 10)
