@@ -75,16 +75,19 @@
 
 # What is the winning Elf's score?
 
-get_row <- function(x, score) {
-  x[, 1] == score
+get_row <- function(x, marble) {
+  x[, 1] == marble
 }
-get_position <- function(x, score) {
-  x[get_row(x, score), 2]
+get_position <- function(x, marble) {
+  x[get_row(x, marble), 2]
+}
+max_position <- function(x) {
+  max(x[, 2], na.rm = TRUE)
 }
 next_position <- function(x, current) {
   last_position <- get_position(x, current - 1L)
   last_position <- if (is.na(last_position)) 0L else last_position
-  if (current == last_position) {
+  if (max_position(x) == last_position) {
     return(2L)
   } else if (current %% 23 == 0) {
     return(last_position - 7L)
@@ -96,19 +99,22 @@ next_position <- function(x, current) {
 }
 fill_position <- function(x, current) {
   pos     <- next_position(x, current)
+  if (pos < 1) {
+    pos <- current + pos
+  }
   the_row <- get_row(x, current)
-  nona      <- !is.na(x[, 2])
+  nona    <- !is.na(x[, 2])
   if (current %% 23 > 0) {
     to_replace <- x[, 2] >= pos & nona
     x[the_row, 2]    <- pos
     x[to_replace, 2] <- x[to_replace, 2] + 1L
   } else {
     to_replace <- x[, 2] > pos & nona
-    nullify <- x[, 2] == pos & nona
+    nullify    <- x[, 2] == pos & nona
     x[the_row, "score"] <- current + x[pos, 1]
     x[to_replace, 2]    <- x[to_replace, 2] - 1L 
-    x[nullify, 2]       <- NA
-    x[the_row, 2]       <- NA
+    x[nullify, 2] <- NA
+    x[the_row, 2] <- NA
   }
   x
 }
