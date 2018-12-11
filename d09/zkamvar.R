@@ -100,7 +100,7 @@ next_position <- function(x, current) {
 fill_position <- function(x, current) {
   pos     <- next_position(x, current)
   if (pos < 1) {
-    pos <- current + pos
+    pos <- max_position(x) + pos
   }
   the_row <- get_row(x, current)
   nona    <- !is.na(x[, 2])
@@ -110,11 +110,11 @@ fill_position <- function(x, current) {
     x[to_replace, 2] <- x[to_replace, 2] + 1L
   } else {
     to_replace <- x[, 2] > pos & nona
-    nullify    <- x[, 2] == pos & nona
-    x[the_row, "score"] <- current + x[pos, 1]
+    the_score  <- x[, 2] == pos & nona
+    x[the_row, "score"] <- current + x[the_score, 1]
     x[to_replace, 2]    <- x[to_replace, 2] - 1L 
-    x[nullify, 2] <- NA
-    x[the_row, 2] <- NA
+    x[the_score, 2] <- NA
+    x[the_row, 2]   <- NA
   }
   x
 }
@@ -134,7 +134,11 @@ play_game <- function(last_marble = 25) {
   mat[, 1] <- seq(from = 0, to = last_marble)
   mat[1:4, 2] <- c(1, 3, 2, 4) 
   for (i in seq(from = 4, to = last_marble)) {
-    mat <- fill_position(mat, i)
+
+    x <- try(mat <- fill_position(mat, i))
+    if (inherits(x, "try-error")) {
+      stop(sprintf("fill_position(play_game(%d), %d)", i - 1, i))
+    }
   }
   mat
 }
@@ -142,8 +146,24 @@ play_game <- function(last_marble = 25) {
 find_winners <- function(game, n) {
   winners <- which(game[, "score"] > 0)
   wlist   <- split(game[winners, "score"], winners %% n)
-  sort(vapply(wlist, sum, numeric(1)))
+  max(vapply(wlist, sum, numeric(1)))
 }
+# -   10 players; last marble is worth 1618 points: high score is 8317
 mat <- play_game(1618)
-
 find_winners(mat, 10)
+# -   13 players; last marble is worth 7999 points: high score is 146373
+mat <- play_game(7999)
+find_winners(mat, 13)
+# -   17 players; last marble is worth 1104 points: high score is 2764
+mat <- play_game(1104)
+find_winners(mat, 17)
+# -   21 players; last marble is worth 6111 points: high score is 54718
+mat <- play_game(6111)
+find_winners(mat, 21)
+# -   30 players; last marble is worth 5807 points: high score is 37305
+mat <- play_game(5807)
+find_winners(mat, 30)
+
+# - Puzzle input: 476 players; last marble is worth 71431 points: high score is 
+mat <- play_game(71431)
+find_winners(mat, 476)
