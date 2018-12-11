@@ -90,7 +90,7 @@ next_position <- function(x, current) {
   }
 }
 fill_position <- function(x, current) {
-  pos <- next_position(x, current)
+  pos        <- next_position(x, current)
   to_replace <- x[, 2] >= pos
   x[get_row(x, current), 2] <- pos
   x[to_replace, 2] <- x[to_replace, 2] + 1L
@@ -101,4 +101,17 @@ mat <- matrix(0L, nrow = 1619, ncol = 2)
 mat[, 1] <- seq(f = 0, t = 1618)
 mat[1:4, 2] <- c(1, 3, 2, 4) 
 head(mat)
-head(fill_position(mat, 4))
+
+get_order <- function(x) {
+  order(mat[mat[, 2] > 0, 2])
+}
+
+for_mat <- function(mat) {
+  paste(format(mat[get_order(mat), 1]), collapse = " ")
+}
+for (i in 4:22) {
+  mat <- fill_position(mat, i)
+  message(for_mat(mat))
+}
+
+head(mat, 23)
