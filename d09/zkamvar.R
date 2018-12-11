@@ -75,3 +75,30 @@
 
 # What is the winning Elf's score?
 
+get_row <- function(x, score) {
+  x[, 1] == score
+}
+get_position <- function(x, score) {
+  x[get_row(x, score), 2]
+}
+next_position <- function(x, current) {
+  last_position <- get_position(x, current - 1L)
+  if (current == last_position) {
+    return(2L)
+  } else {
+    return(last_position + 2L)
+  }
+}
+fill_position <- function(x, current) {
+  pos <- next_position(x, current)
+  to_replace <- x[, 2] >= pos
+  x[get_row(x, current), 2] <- pos
+  x[to_replace, 2] <- x[to_replace, 2] + 1L
+  x
+}
+
+mat <- matrix(0L, nrow = 1619, ncol = 2)
+mat[, 1] <- seq(f = 0, t = 1618)
+mat[1:4, 2] <- c(1, 3, 2, 4) 
+head(mat)
+head(fill_position(mat, 4))
