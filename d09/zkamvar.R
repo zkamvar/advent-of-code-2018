@@ -164,6 +164,6 @@ find_winners(mat, 21)
 mat <- play_game(5807)
 find_winners(mat, 30)
 
-# - Puzzle input: 476 players; last marble is worth 71431 points: high score is 
+# - Puzzle input: 476 players; last marble is worth 71431 points: high score is 384205
 mat <- play_game(71431)
 find_winners(mat, 476)
