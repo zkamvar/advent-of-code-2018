@@ -74,6 +74,29 @@
 # -   30 players; last marble is worth 5807 points: high score is 37305
 
 # What is the winning Elf's score?
+circle <- new.env(hash = TRUE)
+make_marble <- function(marble = 0, left = 0, circle) {
+  e <- new.env(hash = TRUE)
+  e$marble <- marble
+  i <- paste0("m", marble)
+  j <- paste0("m", left)
+  if (marble == 0) {
+    e$left      <- e
+    e$right     <- e
+    circle[[i]] <- e
+  } else {
+    lft <- circle[[j]]
+    # (left) <- marble i
+    e$left  <- lft
+    # marble i -> (right)
+    e$right <- lft$right
+    # left -> (marble i) 
+    lft$right$left <- e
+    # (marble i) <- right
+    lft$right      <- e
+    circle[[i]] <- e
+  }
+}
 
 get_row <- function(x, marble) {
   x[, 1] == marble
