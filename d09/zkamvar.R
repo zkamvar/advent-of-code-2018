@@ -124,17 +124,17 @@ show_circle <- function(circle) {
 
 init_game <- function(players = 9, rounds = 25) {
   circle         <- new.env(hash = TRUE)
-  circle$scores  <- rep(0L, players)
+  circle$scores  <- rep(0.0, players)
   circle$current <- NA
   circle
 }
 
 play_game <- function(players = 9, rounds = 25, verbose = FALSE) {
   g <- init_game(players, rounds)
-  for (i in seq(0, rounds)) {
+  for (i in seq(0L, rounds)) {
     if (i > 0 && i %% 23 == 0) {
       current <- g[[g$current]]
-      for (j in seq(6)) {
+      for (j in seq(6L)) {
         current <- current$left
       }
       g$current <- sprintf("m%d", current$marble)
@@ -143,6 +143,9 @@ play_game <- function(players = 9, rounds = 25, verbose = FALSE) {
       delete(current$left$marble, g)
     } else {
       insert(i, g)
+    }
+    if (i %% 1e5 == 0) {
+      cat(as.character(Sys.time()), i, "\n")
     }
     if (verbose) {
       show_circle(g)
@@ -175,6 +178,6 @@ max(g$scores)
 system.time(g <- play_game(476, 71431))
 max(g$scores)
 
-# g <- play_game(476, 7143100)
-# max(g$scores)
+system.time(g <- play_game(476, 7143100))
+max(g$scores)
 
