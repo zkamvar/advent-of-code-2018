@@ -74,8 +74,7 @@
 # -   30 players; last marble is worth 5807 points: high score is 37305
 
 # What is the winning Elf's score?
-circle <- new.env(hash = TRUE)
-make_marble <- function(marble = 0, left = 0, circle) {
+insert <- function(marble = 0, left = 0, circle) {
   e <- new.env(hash = TRUE)
   e$marble <- marble
   i <- paste0("m", marble)
@@ -83,21 +82,39 @@ make_marble <- function(marble = 0, left = 0, circle) {
   if (marble == 0) {
     e$left      <- e
     e$right     <- e
-    circle[[i]] <- e
+  } else if (marble == 1) {
+    zero <- circle[[j]]
+    e$left     <- zero
+    e$right    <- zero
+    zero$left  <- e
+    zero$right <- e
   } else {
     lft <- circle[[j]]
-    # (left) <- marble i
-    e$left  <- lft
+    # (left) -- marble i
+    e$left <- lft
     # marble i -> (right)
     e$right <- lft$right
-    # left -> (marble i) 
+    # left -- (marble i) 
     lft$right$left <- e
-    # (marble i) <- right
-    lft$right      <- e
-    circle[[i]] <- e
+    # (marble i) -- right
+    lft$right   <- e
   }
+  circle[[i]] <- e
 }
-
+circle <- new.env(hash = TRUE)
+insert(0, 0, circle)
+insert(1, 0, circle)
+insert(2, 0, circle)
+show_circle <- function(circle) {
+  zero <- circle[["m0"]]
+  right <- zero$right
+  cat(zero$marble, " ")
+  while (!identical(zero, right)) {
+    cat(right$marble, " ")
+    right <- right$right
+  }
+  cat("\n")
+}
 get_row <- function(x, marble) {
   x[, 1] == marble
 }
