@@ -74,36 +74,30 @@
 # -   30 players; last marble is worth 5807 points: high score is 37305
 
 # What is the winning Elf's score?
-insert <- function(marble = 0, left = 0, circle) {
+insert <- function(marble = 0, circle) {
   e <- new.env(hash = TRUE)
   e$marble <- marble
-  i <- paste0("m", marble)
-  j <- paste0("m", left)
+  i <- sprintf("m%d", marble)
   if (marble == 0) {
     e$left      <- e
     e$right     <- e
-  } else if (marble == 1) {
-    zero <- circle[[j]]
-    e$left     <- zero
-    e$right    <- zero
-    zero$left  <- e
-    zero$right <- e
   } else {
-    lft <- circle[[j]]
+    left <- circle[[circle$current]]$right
     # (left) -- marble i
-    e$left <- lft
+    e$left <- left
     # marble i -> (right)
-    e$right <- lft$right
+    e$right <- left$right
     # left -- (marble i) 
-    lft$right$left <- e
+    left$right$left <- e
     # (marble i) -- right
-    lft$right   <- e
+    left$right <- e
   }
   circle[[i]] <- e
+  circle$current <- i
 }
 
 delete <- function(marble = 23, circle) {
-  i <- paste0("m", marble)
+  i <- sprintf("m%d", marble)
   m <- circle[[i]]
   r <- m$right
   l <- m$left
@@ -118,118 +112,69 @@ show_circle <- function(circle) {
   right <- zero$right
   cat(zero$marble, " ")
   while (!identical(zero, right)) {
-    cat(right$marble, " ")
+    if (sprintf("m%d", right$marble) == circle$current) {
+      cat(sprintf("(%d) ", right$marble))
+    } else {
+      cat(right$marble, " ")
+    }
     right <- right$right
   }
   cat("\n")
 }
 
 init_game <- function(players = 9, rounds = 25) {
-  list(scores = rep(0L, players),
-       current = 0L,
-       circle = new.env(hash = TRUE)
-      )
-}
-g <- init_game()
-insert(0, 0, g$circle)
-insert(1, 0, g$circle)
-insert(2, 0, g$circle)
-
-
-
-get_row <- function(x, marble) {
-  x[, 1] == marble
-}
-get_position <- function(x, marble) {
-  x[get_row(x, marble), 2]
-}
-max_position <- function(x) {
-  max(x[, 2], na.rm = TRUE)
-}
-next_position <- function(x, current) {
-  last_position <- get_position(x, current - 1L)
-  last_position <- if (is.na(last_position)) 0L else last_position
-  if (max_position(x) == last_position) {
-    return(2L)
-  } else if (current %% 23 == 0) {
-    return(last_position - 7L)
-  } else if (last_position == 0L) {
-    return(get_position(x, current - 2L) - 4L)
-  } else {
-    return(last_position + 2L)
-  }
-}
-fill_position <- function(x, current) {
-  pos     <- next_position(x, current)
-  if (pos < 1) {
-    pos <- max_position(x) + pos
-  }
-  the_row <- get_row(x, current)
-  nona    <- !is.na(x[, 2])
-  if (current %% 23 > 0) {
-    to_replace <- x[, 2] >= pos & nona
-    x[the_row, 2]    <- pos
-    x[to_replace, 2] <- x[to_replace, 2] + 1L
-  } else {
-    to_replace <- x[, 2] > pos & nona
-    the_score  <- x[, 2] == pos & nona
-    x[the_row, "score"] <- current + x[the_score, 1]
-    x[to_replace, 2]    <- x[to_replace, 2] - 1L 
-    x[the_score, 2] <- NA
-    x[the_row, 2]   <- NA
-  }
-  x
+  circle         <- new.env(hash = TRUE)
+  circle$scores  <- rep(0L, players)
+  circle$current <- NA
+  circle
 }
 
-get_order <- function(x) {
-  order(x[x[, 2] > 0, 2], na.last = NA)
-}
-
-for_mat <- function(x) {
-  paste(format(x[get_order(x), 1]), collapse = " ")
-}
-
-play_game <- function(last_marble = 25) {
-  mat <- matrix(0L, nrow = last_marble + 1L, ncol = 3,
-                dimnames = list(NULL, c("marble", "position", "score"))
-               )
-  mat[, 1] <- seq(from = 0, to = last_marble)
-  mat[1:4, 2] <- c(1, 3, 2, 4) 
-  for (i in seq(from = 4, to = last_marble)) {
-
-    x <- try(mat <- fill_position(mat, i))
-    if (inherits(x, "try-error")) {
-      stop(sprintf("fill_position(play_game(%d), %d)", i - 1, i))
+play_game <- function(players = 9, rounds = 25, verbose = FALSE) {
+  g <- init_game(players, rounds)
+  for (i in seq(0, rounds)) {
+    if (i > 0 && i %% 23 == 0) {
+      current <- g[[g$current]]
+      for (j in seq(6)) {
+        current <- current$left
+      }
+      g$current <- sprintf("m%d", current$marble)
+      the_player <- i %% players
+      g$scores[the_player] <- i + current$left$marble + g$scores[the_player]
+      delete(current$left$marble, g)
+    } else {
+      insert(i, g)
+    }
+    if (verbose) {
+      show_circle(g)
     }
   }
-  mat
+  g
 }
+g <- play_game(verbose = TRUE)
+max(g$scores)
+g <- play_game(10, 1618)
+max(g$scores)
 
-find_winners <- function(game, n) {
-  winners <- which(game[, "score"] > 0)
-  wlist   <- split(game[winners, "score"], winners %% n)
-  max(vapply(wlist, sum, numeric(1)))
-}
 # -   10 players; last marble is worth 1618 points: high score is 8317
-mat <- play_game(1618)
-find_winners(mat, 10)
+system.time(g <- play_game(10, 1618))
+max(g$scores)
 # -   13 players; last marble is worth 7999 points: high score is 146373
-mat <- play_game(7999)
-find_winners(mat, 13)
+system.time(g <- play_game(13, 7999))
+max(g$scores)
 # -   17 players; last marble is worth 1104 points: high score is 2764
-mat <- play_game(1104)
-find_winners(mat, 17)
+system.time(g <- play_game(17, 1104))
+max(g$scores)
 # -   21 players; last marble is worth 6111 points: high score is 54718
-mat <- play_game(6111)
-find_winners(mat, 21)
+system.time(g <- play_game(21, 6111))
+max(g$scores)
 # -   30 players; last marble is worth 5807 points: high score is 37305
-mat <- play_game(5807)
-find_winners(mat, 30)
+system.time(g <- play_game(30, 5807))
+max(g$scores)
 
 # - Puzzle input: 476 players; last marble is worth 71431 points: high score is 384205
-mat <- play_game(71431)
-find_winners(mat, 476)
+system.time(g <- play_game(476, 71431))
+max(g$scores)
 
-# - Part two: What if the last marble were 100 times higher??? o.O;
-# mat <- play_game(7143100)
-# find_winners(mat, 476)
+# g <- play_game(476, 7143100)
+# max(g$scores)
+
