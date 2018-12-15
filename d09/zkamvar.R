@@ -101,10 +101,18 @@ insert <- function(marble = 0, left = 0, circle) {
   }
   circle[[i]] <- e
 }
-circle <- new.env(hash = TRUE)
-insert(0, 0, circle)
-insert(1, 0, circle)
-insert(2, 0, circle)
+
+delete <- function(marble = 23, circle) {
+  i <- paste0("m", marble)
+  m <- circle[[i]]
+  r <- m$right
+  l <- m$left
+  r$left  <- l
+  l$right <- r
+  m$right <- NULL
+  m$left  <- NULL
+}
+
 show_circle <- function(circle) {
   zero <- circle[["m0"]]
   right <- zero$right
@@ -115,6 +123,20 @@ show_circle <- function(circle) {
   }
   cat("\n")
 }
+
+init_game <- function(players = 9, rounds = 25) {
+  list(scores = rep(0L, players),
+       current = 0L,
+       circle = new.env(hash = TRUE)
+      )
+}
+g <- init_game()
+insert(0, 0, g$circle)
+insert(1, 0, g$circle)
+insert(2, 0, g$circle)
+
+
+
 get_row <- function(x, marble) {
   x[, 1] == marble
 }
