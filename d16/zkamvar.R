@@ -184,7 +184,7 @@ funs <- list(
     registers[i$C + 1] <- as.integer(i$A > registers[i$B + 1])
     registers  
   },
-  gtir = function(instructions, registers) {
+  gtri = function(instructions, registers) {
     i <- get_instructions(instructions)
     registers[i$C + 1] <- as.integer(registers[i$A + 1] > i$B)
     registers  
@@ -236,22 +236,82 @@ read_input <- function(dat = "zkamvar-input.txt") {
        p2 = convert_to_matrix(p2)
   )
 }
-inp <- read_input()
-test <- list(before = matrix(c(3, 2, 1, 1), nrow = 1),
-             after  = matrix(c(3, 2, 2, 1), nrow = 1),
-             instruction = matrix(c(9, 2, 1, 2), nrow = 1)
-            )
-run_tests <- function(instruction, before) {
+run_tests <- function(instruction, before = NULL) {
+  if (is.array(instruction)) {
+    if (length(dim(instruction)) == 3) {
+      before <- instruction[, , "before"]
+      instruction <- instruction[ , , "instruction"]
+    } else {
+      before <- instruction[, "before"]
+      instruction <- instruction[ , "instruction"]
+    }
+  }
   vapply(funs, do.call, FUN.VALUE = double(4), 
          list(instruction, before))
 }
-multi_codes <- function(instruction, before, after) {
+cromulence <- function(a, b) {
+  all(a == b)
+}
+multi_codes <- function(instruction, before = NULL, after = NULL) {
+  if (is.array(instruction)) {
+    if (length(dim(instruction)) == 3) {
+      before <- instruction[, , "before"]
+      after  <- instruction[, , "after"]
+      instruction <- instruction[ , , "instruction"]
+    } else {
+      before <- instruction[, "before"]
+      after  <- instruction[, "after"]
+      instruction <- instruction[ , "instruction"]
+    }
+  }
   tests <- run_tests(instruction, before)
-  res <- apply(tests, MARGIN = 2, FUN = identical, 
-               drop(after), attrib = FALSE, ignore.env = TRUE)
+  res <- apply(tests, MARGIN = 2, FUN = cromulence, after) 
   res
 }
+inp <- read_input()
+test <- list(before = c(3, 2, 1, 1),
+             after  = c(3, 2, 2, 1),
+             instruction = c(9, 2, 1, 2)
+            )
 multi_codes(test$inst, test$before, test$after)
-run_tests(inp$p1[1,,"instruction"], 
-            inp$p1[1,,"before"], 
-            inp$p1[1,,"after"])
+run_tests(inp$p1[1, , ])
+multi_codes(inp$p1[1, , ])
+test_array <- function(i) apply(i, MARGIN = 1, FUN = multi_codes)
+# First question: how many samples contain 3 or more opcodes?
+ta <- test_array(inp$p1)
+sum(colSums(ta) > 2)
+
+
+# Second question: determine order and then answer what value is contained in
+# register 0 after execution of the program.
+test_placement <- integer(length(funs))
+names(test_placement) <- names(funs)
+ip  <- inp$p1
+while(any(test_placement == 0)) {
+  stopifnot(all(rownames(ta) == names(test_placement[test_placement == 0])))
+  cta        <- colSums(ta)
+  definites  <- which(cta == 1)
+  the_tests  <- ta[, definites, drop = FALSE]
+  test_idx   <- rownames(ta)[apply(the_tests, 2, which.max)]
+  test_idx
+  for (j in unique(test_idx)) {
+    z <- ip[definites[test_idx == j], 1, "instruction"]
+    stopifnot(length(unique(z)) == 1)
+    test_placement[j] <- unique(z) + 1L
+  }
+  success <- test_placement[test_placement > 0] - 1L
+  incomplete <- !rownames(ta) %in% names(success)
+  to_remove <- ip[, 1, "instruction"] %in% success
+  ip <- ip[!to_remove, , , drop = FALSE]
+  ta <- ta[, !to_remove, drop = FALSE]
+  ta <- ta[incomplete, , drop = FALSE]
+  print(test_placement)
+}
+funs <- funs[order(test_placement)]
+registers <- c(0, 0, 0, 0)
+for (i in seq(nrow(inp$p2))) {
+  instruct  <- inp$p2[i, ]
+  fun <- instruct[1] + 1L
+  registers <- funs[[fun]](instruct, registers)
+}
+registers
