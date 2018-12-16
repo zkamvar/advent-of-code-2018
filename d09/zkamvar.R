@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 # --- Day 9: Marble Mania ---
 
 # You talk to the Elves while you wait for your navigation system to
@@ -74,6 +75,46 @@
 # -   30 players; last marble is worth 5807 points: high score is 37305
 
 # What is the winning Elf's score?
+msg <- "Usage: Rscript zkamvar.R [<players> <rounds>] [-f FILE] [-e]
+
+        Arguments:
+        <players>  an integer specifying the number of players in the game
+        <rounds>   an integer specifying the number of points the last marble
+                   is worth
+        -f FILE    an optional input file that specifies the number of players
+                   and rounds in the form of:
+                     '<n> players; last marble is worth <m> points'
+        -e         Run an example game
+
+        Examples:
+
+        Rscript zkamvar.R 10 1618 # high score: 8317 points to player 7
+        Rscript zkamvar.R 13 7999 # high score: 146373 points
+        Rscript zkamvar.R 17 1104 # high score: 2764 points
+        Rscript zkamvar.R 21 6111 # high score: 54718 points
+        Rscript zkamvar.R 30 5807 # high score: 37350 points
+        Rscript zkamvar.R -f zkamvar-input.txt
+        Rscript zkamvar.R 476 7143100 # note: this uses a lot of memory
+"
+args <- commandArgs(trailingOnly = TRUE)
+ex <- FALSE
+if (length(args) == 1 && args == "-e") {
+  ex <- TRUE
+} else if (length(args) == 2) {
+  if (args[1] == "-f") {
+    suppressWarnings({
+      params <- scan(args[2], what = character())
+      params <- as.integer(params)
+      params <- params[!is.na(params)]
+    })
+  } else if (!anyNA(args <- as.integer(args))) {
+    params <- args
+  } else {
+    stop(msg)
+  }
+} else {
+  stop(msg)
+}
 insert <- function(marble = 0, circle) {
   e <- new.env(hash = TRUE, parent = circle)
   e$marble <- marble
@@ -153,32 +194,28 @@ play_game <- function(players = 9, rounds = 25, verbose = FALSE) {
   }
   g
 }
-g <- play_game(verbose = TRUE)
-max(g$scores)
-g <- play_game(10, 1618)
-max(g$scores)
 
-# -   10 players; last marble is worth 1618 points: high score is 8317
-system.time(g <- play_game(10, 1618))
-max(g$scores)
-# -   13 players; last marble is worth 7999 points: high score is 146373
-system.time(g <- play_game(13, 7999))
-max(g$scores)
-# -   17 players; last marble is worth 1104 points: high score is 2764
-system.time(g <- play_game(17, 1104))
-max(g$scores)
-# -   21 players; last marble is worth 6111 points: high score is 54718
-system.time(g <- play_game(21, 6111))
-max(g$scores)
-# -   30 players; last marble is worth 5807 points: high score is 37305
-system.time(g <- play_game(30, 5807))
-max(g$scores)
-
-# - Puzzle input: 476 players; last marble is worth 71431 points: high score is 384205
-system.time(g <- play_game(476, 71431))
-max(g$scores)
-rm(g)
-gc()
-system.time(g <- play_game(476, 7143100))
-max(g$scores)
-
+play_and_score <- function(players = 9, rounds = 25, verbose = FALSE) {
+  tim <- system.time(g <- play_game(players, rounds, verbose))
+  highscore <- max(g$scores)
+  player    <- which.max(g$scores)
+  sprintf("
+          %d players; last marble is worth %d points:
+          
+          High score: %d points
+          Player    : %d
+          Time      : %.2f seconds
+          
+",
+          players,
+          rounds,
+          highscore,
+          player,
+          tim[["elapsed"]])
+}
+if (ex) {
+  cat("Running example ...\n")
+  cat(play_and_score(verbose = TRUE))
+} else {
+  cat(play_and_score(players = params[1], rounds = params[2]))
+}
