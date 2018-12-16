@@ -13,7 +13,7 @@ tim <- bind_rows(first  = first_attempt %>% get_times,
   mutate(run = fct_recode(run, "without parent" = "first", 
                                "with parent" = "second"))
 {
-ggplot(tim, aes(x = Marbles, y = seconds, group = run)) +
+p <- ggplot(tim, aes(x = Marbles, y = seconds, group = run)) +
   geom_line(aes(linetype = run, color = run), size = 1.25) +
   scale_color_grey(start = 0.6, end = 0.1) +
   scale_linetype_manual(values = c(2, 1), guide = "none") + 
@@ -28,3 +28,4 @@ ggplot(tim, aes(x = Marbles, y = seconds, group = run)) +
        y     = "Time (seconds) to insert 100K marbles",
        color = "Using environments") 
 }
+ggsave(file = here("d09", "zkamvar-timings.png"), width = 10)
