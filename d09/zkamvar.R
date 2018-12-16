@@ -75,7 +75,7 @@
 
 # What is the winning Elf's score?
 insert <- function(marble = 0, circle) {
-  e <- new.env(hash = TRUE)
+  e <- new.env(hash = TRUE, parent = circle)
   e$marble <- marble
   i <- sprintf("m%d", marble)
   if (marble == 0) {
@@ -123,7 +123,7 @@ show_circle <- function(circle) {
 }
 
 init_game <- function(players = 9, rounds = 25) {
-  circle         <- new.env(hash = TRUE)
+  circle         <- new.env(hash = TRUE, parent = globalenv())
   circle$scores  <- rep(0.0, players)
   circle$current <- NA
   circle
@@ -177,7 +177,8 @@ max(g$scores)
 # - Puzzle input: 476 players; last marble is worth 71431 points: high score is 384205
 system.time(g <- play_game(476, 71431))
 max(g$scores)
-
+rm(g)
+gc()
 system.time(g <- play_game(476, 7143100))
 max(g$scores)
 
