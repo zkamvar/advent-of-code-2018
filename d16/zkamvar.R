@@ -121,3 +121,137 @@
 # Ignoring the opcode numbers, how many samples in your puzzle input behave
 # like three or more opcodes?
 
+get_instructions <- function(instructions) {
+  A <- instructions[2]
+  B <- instructions[3]
+  C <- instructions[4]
+  list(A = A, B = B, C = C)
+}
+funs <- list(
+  addr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] + registers[i$B + 1]
+    registers  
+  },
+  addi = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] + i$B
+    registers  
+  },
+  mulr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] * registers[i$B + 1]
+    registers  
+
+  },
+  muli = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] * i$B
+    registers  
+  },
+  banr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwAnd(registers[i$A + 1], registers[i$B + 1])
+    registers  
+  },
+  bani = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwAnd(registers[i$A + 1], i$B)
+    registers  
+  },
+  borr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwOr(registers[i$A + 1], registers[i$B + 1])
+    registers  
+  },
+  bori = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwOr(registers[i$A + 1], i$B)
+    registers  
+  },
+  setr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1]
+    registers  
+  },
+  seti = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- i$A 
+    registers  
+  },
+  gtir = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(i$A > registers[i$B + 1])
+    registers  
+  },
+  gtir = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] > i$B)
+    registers  
+  },
+  gtrr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] > registers[i$B + 1])
+    registers  
+  },
+  eqir = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(i$A == registers[i$B + 1])
+    registers  
+  },
+  eqri = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] == i$B)
+    registers  
+  },
+  eqrr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] == registers[i$B + 1])
+    registers  
+  }
+)
+convert_to_matrix <- function(code) {
+  res <- strsplit(code, " ")
+  t(vapply(res, as.integer, integer(4)))
+}
+
+read_input <- function(dat = "zkamvar-input.txt") {
+  ip <- readLines(dat)
+  splitline <- max(which(ip == ""))
+  p1 <- ip[seq(splitline)]
+  p2 <- ip[seq(from = splitline + 1, to = length(ip))]
+  p1 <- p1[p1 != ""]
+  pat <- "[A-z]+[: ]{2,3}\\[(\\d{1,2}), (\\d{1,2}), (\\d{1,2}), (\\d{1,2})\\]"
+  rplc <- "\\1 \\2 \\3 \\4"
+  before <- trimws(gsub(pat, rplc, p1[grepl("Before", p1)]))
+  after  <- trimws(gsub(pat, rplc, p1[grepl("After", p1)]))
+  instruction <- p1[grepl("^[0-9]", p1)]
+  mat <- array(0L, c(length(before), 4L, 3L),
+               dimnames = list(NULL, NULL, c("before", "instruction", "after")))
+
+  mat[, , "before"]      <- convert_to_matrix(before)
+  mat[, , "instruction"] <- convert_to_matrix(instruction)
+  mat[, , "after"]       <- convert_to_matrix(after)
+  list(p1 = mat,
+       p2 = convert_to_matrix(p2)
+  )
+}
+inp <- read_input()
+test <- list(before = matrix(c(3, 2, 1, 1), nrow = 1),
+             after  = matrix(c(3, 2, 2, 1), nrow = 1),
+             instruction = matrix(c(9, 2, 1, 2), nrow = 1)
+            )
+run_tests <- function(instruction, before) {
+  vapply(funs, do.call, FUN.VALUE = double(4), 
+         list(instruction, before))
+}
+multi_codes <- function(instruction, before, after) {
+  tests <- run_tests(instruction, before)
+  res <- apply(tests, MARGIN = 2, FUN = identical, 
+               drop(after), attrib = FALSE, ignore.env = TRUE)
+  res
+}
+multi_codes(test$inst, test$before, test$after)
+run_tests(inp$p1[1,,"instruction"], 
+            inp$p1[1,,"before"], 
+            inp$p1[1,,"after"])
