@@ -116,7 +116,7 @@ if (length(args) == 1 && args == "-e") {
   stop(msg)
 }
 insert <- function(marble = 0, circle) {
-  e <- new.env(hash = TRUE, parent = circle)
+  e <- new.env(hash = TRUE, parent = circle, size = 3)
   e$marble <- marble
   i <- sprintf("m%d", marble)
   if (marble == 0) {
@@ -164,7 +164,9 @@ show_circle <- function(circle) {
 }
 
 init_game <- function(players = 9, rounds = 25) {
-  circle         <- new.env(hash = TRUE, parent = globalenv())
+  circle         <- new.env(hash   = TRUE, 
+                            parent = globalenv(), 
+                            size   = rounds + 2)
   circle$scores  <- rep(0.0, players)
   circle$current <- NA
   circle
@@ -202,14 +204,14 @@ play_and_score <- function(players = 9, rounds = 25, verbose = FALSE) {
   sprintf("
           %d players; last marble is worth %d points:
           
-          High score: %d points
+          High score: %f points
           Player    : %d
           Time      : %.2f seconds
           
 ",
           players,
           rounds,
-          highscore,
+          as.numeric(highscore),
           player,
           tim[["elapsed"]])
 }
