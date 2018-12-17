@@ -203,33 +203,43 @@ read_data <- function(input) {
   } else {
     dat <- readLines(input)
   }
-  x <- gsub("^.*x=(\\d+).+$", "\\1", dat) 
-  y <- gsub("^.*y=(\\d+).+$", "\\1", dat) 
-  clay <- gsub("^.+\\.\\.(\\d+)$", "\\1", dat)
+  x    <- as.integer(gsub("^.*x=(\\d+).+$", "\\1", dat))
+  y    <- as.integer(gsub("^.*y=(\\d+).+$", "\\1", dat))
+  clay <- as.integer(gsub("^.+\\.\\.(\\d+)$", "\\1", dat))
   ori  <- ifelse(grepl("x=\\d+\\.\\.", dat), "right", "down")
-  ox   <- integer(length(dat) * 2) -> oy
-  x <- as.integer(x)
-  y <- as.integer(y)
-  clay <- as.integer(clay)
+  data.frame(x, y, clay, ori, stringsAsFactors = FALSE)
+}
+parse_data <- function(input) {
+  if (!is.data.frame(input)) {
+    input <- read_data(input)
+  } 
+  x    <- input$x
+  y    <- input$y
+  clay <- input$clay
+  ori  <- input$ori
+
+  down <- ori == "down"
+  vertical   <- sum(clay[down] - y[down]) + 1L
+  horizontal <- sum(clay[!down] - x[!down])
+  ox <- integer(vertical + horizontal) -> oy
   count <- 1L
-  for (i in seq(dat)) {
+  for (i in seq(ori)) {
     if (ori[i] == "down"){
       vein    <- seq(from = y[i], to = clay[i])
       idx     <- seq(from = count, length.out = length(vein))
-      count   <- max(idx)
       oy[idx] <- vein
       ox[idx] <- x[i]
     } else {
       vein    <- seq(from = x[i], to = clay[i])
       idx     <- seq(from = count, length.out = length(vein))
-      count   <- max(idx)
       ox[idx] <- vein
       oy[idx] <- y[i]
     }
+    count <- max(idx) + 1L
   }
   data.frame(x = ox, y = oy)
 }
-dat <- read_data(input)
+dat <- parse_data(input)
 dat
 datmat <- function(dat) {
   mnx <- min(dat$x) - 1L
@@ -249,4 +259,3 @@ datmat <- function(dat) {
 }
 print(datmat(dat), quote = FALSE)
 zdat <- read_data("zkamvar-input.txt")
-print(datmat(zdat), quote = FALSE)
