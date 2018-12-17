@@ -186,3 +186,40 @@
 
 # How many tiles can the water reach within the range of y values in your scan?
 
+input <- "
+x=495, y=2..7
+y=7, x=495..501
+x=501, y=3..7
+x=498, y=2..4
+x=506, y=1..2
+x=498, y=10..13
+x=504, y=10..13
+y=13, x=498..504
+"
+
+read_data <- function(input) {
+  if (grepl("\n", input)) {
+    dat <- scan(text = input, what = character(), sep = "\n")
+  } else {
+    dat <- readLines(input)
+  }
+  x <- gsub("^.*x=(\\d+).+$", "\\1", dat) 
+  y <- gsub("^.*y=(\\d+).+$", "\\1", dat) 
+  clay <- gsub("^.+\\.\\.(\\d+)$", "\\1", dat)
+  res <- data.frame(x    = as.integer(x),
+                    y    = as.integer(y),
+                    clay = as.integer(clay)
+                   )
+  res
+}
+dat <- read_data(input)
+datmat <- function(dat) {
+
+  mat <- matrix(".", 
+                ncol = diff(range(dat$x)) + 1, 
+                nrow = max(dat$y),
+                dimnames = list(seq(max(dat$y)), seq(from = min(dat$x), to = max(dat$x)))
+               )
+  mat
+}
+datmat(dat)
