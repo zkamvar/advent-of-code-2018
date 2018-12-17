@@ -244,17 +244,17 @@ dat
 datmat <- function(dat) {
   mnx <- min(dat$x) - 1L
   mxx <- max(dat$x) + 1L
-  mat <- matrix(".", 
+  mat <- matrix(0L, 
                 ncol = mxx - mnx + 1L,
                 nrow = max(dat$y) + 1L,
                 dimnames = list(seq(from = 0L, to = max(dat$y)), 
                                 seq(from = mnx, to = mxx))
                )
-  mat["0", "500"] <- "+"
+  mat["0", "500"] <- -1L
   dat <- as.matrix(dat)
   mode(dat) <- "character"
 
-  mat[dat[, 2:1]] <- "#"
+  mat[dat[, 2:1]] <- NA_integer_
   mat
 }
 print(datmat(dat), quote = FALSE)
