@@ -206,20 +206,47 @@ read_data <- function(input) {
   x <- gsub("^.*x=(\\d+).+$", "\\1", dat) 
   y <- gsub("^.*y=(\\d+).+$", "\\1", dat) 
   clay <- gsub("^.+\\.\\.(\\d+)$", "\\1", dat)
-  res <- data.frame(x    = as.integer(x),
-                    y    = as.integer(y),
-                    clay = as.integer(clay)
-                   )
-  res
+  ori  <- ifelse(grepl("x=\\d+\\.\\.", dat), "right", "down")
+  ox   <- integer(length(dat) * 2) -> oy
+  x <- as.integer(x)
+  y <- as.integer(y)
+  clay <- as.integer(clay)
+  count <- 1L
+  for (i in seq(dat)) {
+    if (ori[i] == "down"){
+      vein    <- seq(from = y[i], to = clay[i])
+      idx     <- seq(from = count, length.out = length(vein))
+      count   <- max(idx)
+      oy[idx] <- vein
+      ox[idx] <- x[i]
+    } else {
+      vein    <- seq(from = x[i], to = clay[i])
+      idx     <- seq(from = count, length.out = length(vein))
+      count   <- max(idx)
+      ox[idx] <- vein
+      oy[idx] <- y[i]
+    }
+  }
+  data.frame(x = ox, y = oy)
 }
 dat <- read_data(input)
+dat
 datmat <- function(dat) {
-
+  mnx <- min(dat$x) - 1L
+  mxx <- max(dat$x) + 1L
   mat <- matrix(".", 
-                ncol = diff(range(dat$x)) + 1, 
-                nrow = max(dat$y),
-                dimnames = list(seq(max(dat$y)), seq(from = min(dat$x), to = max(dat$x)))
+                ncol = mxx - mnx + 1L,
+                nrow = max(dat$y) + 1L,
+                dimnames = list(seq(from = 0L, to = max(dat$y)), 
+                                seq(from = mnx, to = mxx))
                )
+  mat["0", "500"] <- "+"
+  dat <- as.matrix(dat)
+  mode(dat) <- "character"
+
+  mat[dat[, 2:1]] <- "#"
   mat
 }
-datmat(dat)
+print(datmat(dat), quote = FALSE)
+zdat <- read_data("zkamvar-input.txt")
+print(datmat(zdat), quote = FALSE)
