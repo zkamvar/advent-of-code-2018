@@ -77,7 +77,7 @@
 # - The instruction pointer contains 1, and so the second instruction, seti 6 0
 #    2, is executed. This is very similar to the instruction before it: 6 is
 #    stored in register 2, and the instruction pointer is left with the value 2.
-#    - The instruction pointer is 2, which points at the instruction addi 0 1 0.
+# - The instruction pointer is 2, which points at the instruction addi 0 1 0.
 #    This is like a relative jump: the value of the instruction pointer, 2, is
 #    loaded into register 0. Then, addi finds the result of adding the value in
 #    register 0 and the value 1, storing the result, 3, back in register 0.
@@ -94,4 +94,144 @@
 #    outside the program, and so the program ends.
 
 # What value is left in register 0 when the background process halts?
+get_instructions <- function(instructions) {
+  A <- instructions[[2]]
+  B <- instructions[[3]]
+  C <- instructions[[4]]
+  list(A = A, B = B, C = C)
+}
+funs <- list(
+  addr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] + registers[i$B + 1]
+    registers
+  },
+  addi = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] + i$B
+    registers
+  },
+  mulr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] * registers[i$B + 1]
+    registers
 
+  },
+  muli = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1] * i$B
+    registers
+  },
+  banr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwAnd(registers[i$A + 1], registers[i$B + 1])
+    registers
+  },
+  bani = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwAnd(registers[i$A + 1], i$B)
+    registers
+  },
+  borr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwOr(registers[i$A + 1], registers[i$B + 1])
+    registers
+  },
+  bori = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- bitwOr(registers[i$A + 1], i$B)
+    registers
+  },
+  setr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- registers[i$A + 1]
+    registers
+  },
+  seti = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- i$A 
+    registers
+  },
+  gtir = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(i$A > registers[i$B + 1])
+    registers
+  },
+  gtri = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] > i$B)
+    registers
+  },
+  gtrr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] > registers[i$B + 1])
+    registers
+  },
+  eqir = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(i$A == registers[i$B + 1])
+    registers
+  },
+  eqri = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] == i$B)
+    registers
+  },
+  eqrr = function(instructions, registers) {
+    i <- get_instructions(instructions)
+    registers[i$C + 1] <- as.integer(registers[i$A + 1] == registers[i$B + 1])
+    registers
+  }
+)
+input <- "#ip 0
+seti 5 0 1
+seti 6 0 2
+addi 0 1 0
+addr 1 2 3
+setr 1 0 0
+seti 8 0 4
+seti 9 0 5"
+
+read_data <- function(input) {
+  if (grepl("\n", input)) {
+    dat <- read.table(text = input, stringsAsFactors = FALSE)
+    ip  <- as.integer(gsub("^\\#ip (\\d).+$", "\\1", input))
+  } else {
+    dat <- read.table(input, stringsAsFactors = FALSE)
+    ip  <- as.integer(gsub("^\\#ip (\\d)", "\\1", readLines(input, n = 1)))
+  }
+  attr(dat, "ip") <- ip
+  names(dat) <- c("code", "A", "B", "C")
+  dat
+}
+codes <- read_data(input)
+print_current <- function(i, ip, reg, previous, codes) {
+  previous <- paste(format(previous), collapse = ", ")
+  reg <- paste(format(reg), collapse = ", ")
+  cds <- paste(as.character(codes[i, ]), collapse = " ")
+  cat("ip=", ip, " [", previous, "] | ", cds, " [", reg, "]\r", sep = "")  
+}
+run_program <- function(codes, funs) {
+  current <- integer(6L) 
+  previous <- current
+  ip   <- attr(codes, "ip") + 1L
+  inst <- 1L
+  the_fun <- codes$code[inst]
+  count <- 1L
+  while(!is.na(the_fun)) {
+    current <- funs[[the_fun]](codes[inst, ], previous)
+    print_current(inst, ip, current, previous, codes)
+    current[ip] <- current[ip] + 1L
+    inst        <- current[ip] + 1L
+    if (inst == 1L && count != 1L) browse()
+    the_fun <- codes$code[inst]
+    previous <- current
+    count <- count + 1L
+  }
+  current[ip] <- current[ip] - 1L
+  current
+}
+
+run_program(codes, funs)
+zcodes <- read_data("zkamvar-input.txt")
+run_program(zcodes, funs)
